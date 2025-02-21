@@ -24,15 +24,14 @@ from torchrl.objectives import ClipPPOLoss
 from torchrl.objectives.value import GAE
 from tqdm import tqdm
 
+# setting parameters
+
 is_fork = multiprocessing.get_start_method() == "fork"
 device = (
     torch.device(0)
     if torch.cuda.is_available() and not is_fork
     else torch.device("cpu")
 )
-
-# setting parameters
-
 num_cells = 256  # number of cells in each layer i.e. output dim.
 lr = 3e-4
 max_grad_norm = 1.0
@@ -40,8 +39,11 @@ max_grad_norm = 1.0
 frames_per_batch = 1000
 # For a complete training, bring the number of frames up to 1M
 
-total_frames = 250_000
+
+#total_frames = 250_000
 #total_frames = 10_000
+total_frames = 1_000_000
+
 
 # PPO parameters
 sub_batch_size = 64  # cardinality of the sub-samples gathered from the current data in the inner loop
@@ -54,7 +56,11 @@ lmbda = 0.95
 entropy_eps = 1e-4
 
 # env
-base_env = GymEnv("Hopper-v4", device=device)
+env_name = "Hopper-v4"
+base_env = GymEnv(env_name, device=device)
+
+#run_name
+run_name = f'PPO_{env_name}_{total_frames}'
 
 #transforms and normalization
 
@@ -70,18 +76,18 @@ env = TransformedEnv(
 
 env.transform[0].init_stats(num_iter=1000, reduce_dim=0, cat_dim=0)
 
-print("normalization constant shape:", env.transform[0].loc.shape)
+#print("normalization constant shape:", env.transform[0].loc.shape)
 
-print("observation_spec:", env.observation_spec)
-print("reward_spec:", env.reward_spec)
-print("input_spec:", env.input_spec)
-print("action_spec (as defined by input_spec):", env.action_spec)
-
+#print("observation_spec:", env.observation_spec)
+#print("reward_spec:", env.reward_spec)
+#print("input_spec:", env.input_spec)
+#print("action_spec (as defined by input_spec):", env.action_spec)
+#
 check_env_specs(env)
-
-rollout = env.rollout(3)
-print("rollout of three steps:", rollout)
-print("Shape of the rollout TensorDict:", rollout.batch_size)
+#
+#rollout = env.rollout(3)
+#print("rollout of three steps:", rollout)
+#print("Shape of the rollout TensorDict:", rollout.batch_size)
 
 # policy
 
@@ -130,8 +136,8 @@ value_module = ValueOperator(
     in_keys=["observation"],
 )
 
-print("Running policy:", policy_module(env.reset()))
-print("Running value:", value_module(env.reset()))
+policy_module(env.reset())
+value_module(env.reset())
 
 # data collector
 
@@ -227,14 +233,14 @@ for i, tensordict_data in enumerate(collector):
             # execute a rollout with the trained policy
             eval_rollout = env.rollout(1000, policy_module)
             logs["eval reward"].append(eval_rollout["next", "reward"].mean().item())
-            logs["eval reward (sum)"].append(
+            logs["Return (test)"].append(
                 eval_rollout["next", "reward"].sum().item()
             )
-            logs["eval step_count"].append(eval_rollout["step_count"].max().item())
+            logs["Max step count (test)"].append(eval_rollout["step_count"].max().item())
             eval_str = (
-                f"eval cumulative reward: {logs['eval reward (sum)'][-1]: 4.4f} "
-                f"(init: {logs['eval reward (sum)'][0]: 4.4f}), "
-                f"eval step-count: {logs['eval step_count'][-1]}"
+                f"eval cumulative reward: {logs['Return (test)'][-1]: 4.4f} "
+                f"(init: {logs['Return (test)'][0]: 4.4f}), "
+                f"eval step-count: {logs['Max step count (test)'][-1]}"
             )
             del eval_rollout
     pbar.set_description(", ".join([eval_str, cum_reward_str, stepcount_str, lr_str]))
@@ -252,33 +258,51 @@ plt.subplot(2, 2, 2)
 plt.plot(logs["step_count"])
 plt.title("Max step count (training)")
 plt.subplot(2, 2, 3)
-plt.plot(logs["eval reward (sum)"])
+plt.plot(logs["Return (test)"])
 plt.title("Return (test)")
 plt.subplot(2, 2, 4)
-plt.plot(logs["eval step_count"])
+plt.plot(logs["Max step count (test)"])
 plt.title("Max step count (test)")
-plt.show()
+plt.savefig(f'../runs/PPO/plots_{run_name}.jpg', dpi=150)
+#plt.show()
 
-# rendering
+# save logs and model
 
-import time
+# Define save path
+save_path = f"../runs/PPO/{run_name}.pth"
 
-# Create an environment with rendering enabled
-render_env = GymEnv("Hopper-v4", device=device, render_mode="human")
+# Create a dictionary
+checkpoint = {
+    "policy_state_dict": policy_module.state_dict(),
+    "value_state_dict": value_module.state_dict(),
+    "optimizer_state_dict": optim.state_dict(),
+    "hyperparameters": {
+        "num_cells": num_cells,
+        "lr": lr,
+        "gamma": gamma,
+        "lmbda": lmbda,
+        "entropy_eps": entropy_eps,
+    }
+}
 
-# Reset environment
-tensordict = render_env.reset()
-done = False
+# Save checkpoint
+torch.save(checkpoint, save_path)
+print(f"Model saved to {save_path}")
 
-# Execute policy in a loop
-with torch.no_grad():
-    while not done:
-        tensordict["observation"] = tensordict["observation"].to(torch.float32)  # Convert dtype
-        action = policy_module(tensordict)  # Get action from trained policy
-        tensordict = render_env.step(action)  # Step in environment
-        render_env.render()  # Render environment
-        time.sleep(0.02)  # Add a small delay for smooth visualization
-        done = tensordict["done"].item()  # Check if episode is over
+import pandas as pd
 
-# Close environment
-render_env.close()
+# Find the maximum length of any logged metric
+max_length = max(len(logs[key]) for key in logs)
+
+# Pad all lists to match max_length
+for key in logs:
+    while len(logs[key]) < max_length:
+        logs[key].append(None)  # Fill with None (or np.nan)
+
+# Convert to DataFrame
+df_logs = pd.DataFrame.from_dict(logs)
+
+# Save to CSV
+df_logs.to_csv(f"../runs/PPO/logs_{run_name}.csv", index=False)
+
+print("Logs saved")
