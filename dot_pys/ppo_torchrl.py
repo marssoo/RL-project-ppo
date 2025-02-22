@@ -60,7 +60,8 @@ env_name = "Hopper-v4"
 base_env = GymEnv(env_name, device=device)
 
 #run_name
-run_name = f'PPO_{env_name}_{total_frames}'
+run_id = 1
+run_name = f'PPO_{env_name}_{run_id}_{total_frames}'
 
 #transforms and normalization
 

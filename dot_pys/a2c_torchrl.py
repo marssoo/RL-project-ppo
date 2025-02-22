@@ -48,7 +48,8 @@ env_name = "Hopper-v4"
 base_env = GymEnv(env_name, device=device)
 
 #name of the run
-run_name = f'A2C_{env_name}_{total_frames}'
+run_id = 1
+run_name = f'A2C_{env_name}_{run_id}_{total_frames}'
 
 env = TransformedEnv(
     base_env,
