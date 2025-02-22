@@ -30,7 +30,7 @@ device = (
 
 #params
 num_cells = 256
-lr = 5e-4
+lr = 3e-4
 max_grad_norm = 1.0
 
 frames_per_batch = 1000
