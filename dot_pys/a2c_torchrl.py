@@ -30,7 +30,7 @@ device = (
 
 #params
 num_cells = 256
-lr = 2e-5
+lr = 5e-4
 max_grad_norm = 1.0
 
 frames_per_batch = 1000
@@ -124,11 +124,6 @@ collector = SyncDataCollector(
     device=device,
 )
 
-# Replay buffer
-replay_buffer = ReplayBuffer(
-    storage=LazyTensorStorage(max_size=frames_per_batch),
-    sampler=SamplerWithoutReplacement(),
-)
 
 # loss
 advantage_module = GAE(
@@ -145,6 +140,11 @@ loss_module = A2CLoss(
 
 # training loop
 optim = torch.optim.Adam(loss_module.parameters(), lr)
+
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optim, total_frames // frames_per_batch, 0.0
+)
+
 logs = defaultdict(list)
 pbar = tqdm(total=total_frames)
 
@@ -154,23 +154,22 @@ logs["eval reward"] = []
 logs["lr"] = []
 
 for i, tensordict_data in enumerate(collector):
+    # Compute advantages directly on the collected batch
     advantage_module(tensordict_data)
-    data_view = tensordict_data.reshape(-1)
-    replay_buffer.extend(data_view.cpu())
     
-    for _ in range(frames_per_batch // 64):
-        subdata = replay_buffer.sample(64)
-        loss_vals = loss_module(subdata.to(device))
-        loss_value = (
-            loss_vals["loss_objective"] + 
-            loss_vals["loss_critic"] + 
-            loss_vals["loss_entropy"]
-        )
-
-        loss_value.backward()
-        torch.nn.utils.clip_grad_norm_(loss_module.parameters(), max_grad_norm)
-        optim.step()
-        optim.zero_grad()
+    # Directly compute the loss on the entire tensordict_data batch
+    loss_vals = loss_module(tensordict_data.to(device))
+    loss_value = (
+        loss_vals["loss_objective"] +
+        loss_vals["loss_critic"] +
+        loss_vals["loss_entropy"]
+    )
+    
+    # Backpropagation and parameter update
+    loss_value.backward()
+    torch.nn.utils.clip_grad_norm_(loss_module.parameters(), max_grad_norm)
+    optim.step()
+    optim.zero_grad()
 
     # Store training rewards
     logs["reward"].append(tensordict_data["next", "reward"].mean().item())
@@ -197,7 +196,7 @@ for i, tensordict_data in enumerate(collector):
         del eval_rollout
 
     pbar.set_description(", ".join([eval_str, cum_reward_str, stepcount_str, lr_str]))
-
+    scheduler.step()
 pbar.close()
 
 # plots
