@@ -36,7 +36,7 @@ max_grad_norm = 1.0
 
 frames_per_batch = 1000
 #total_frames = 250_000
-#total_frames = 10_000
+#total_frames = 100_000
 total_frames = 1_000_000
 total_runs = 3
 
