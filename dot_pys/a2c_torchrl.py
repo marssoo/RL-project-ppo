@@ -201,7 +201,7 @@ for env_name in envs:
                     f"Eval step-count: {logs['Max Step Count (Test)'][-1]}"
                 )
                 del eval_rollout
-
+            pbar.update(frames_per_batch)
             pbar.set_description(", ".join([eval_str, cum_reward_str, stepcount_str, lr_str]))
             scheduler.step()
         pbar.close()
