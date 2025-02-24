@@ -41,9 +41,9 @@ frames_per_batch = 1000
 
 
 #total_frames = 250_000
-#total_frames = 10_000
+#total_frames = 30_000
 total_frames = 1_000_000
-total_runs = 1
+total_runs = 3
 
 # PPO parameters
 sub_batch_size = 64  # cardinality of the sub-samples gathered from the current data in the inner loop
@@ -58,18 +58,18 @@ entropy_eps = 1e-4
 # env
 #env_name = "Hopper-v4"
 
-#envs = ['HumanoidStandup-v4', 'HalfCheetah-v4', 'Hopper-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
-#        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
+envs = ['HumanoidStandup-v4', 'HalfCheetah-v4', 'Hopper-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
+        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
 
-envs = ['HumanoidStandup-v4']
+#envs = ['Swimmer-v4']
+
+#envs = ['HumanoidStandup-v4']
 
 for env_name in envs:
     for run_id in range(1, total_runs+1):
         print(f'########## Starting run {run_id} for {env_name} ##########\n')
         base_env = GymEnv(env_name, device=device)
 
-        #run_name
-        #run_id = 1
         run_name = f'PPO_{env_name}_{run_id}_{total_frames}'
 
         #transforms and normalization
@@ -217,8 +217,6 @@ for env_name in envs:
 
                     # Optimization: backward, grad clipping and optimization step
                     loss_value.backward()
-                    # this is not strictly mandatory but it's good practice to keep
-                    # your gradient norm bounded
                     torch.nn.utils.clip_grad_norm_(loss_module.parameters(), max_grad_norm)
                     optim.step()
                     optim.zero_grad()

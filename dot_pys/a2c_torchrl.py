@@ -37,7 +37,8 @@ max_grad_norm = 1.0
 frames_per_batch = 1000
 #total_frames = 250_000
 #total_frames = 100_000
-total_frames = 1_000_000
+total_frames = 30_000
+#total_frames = 1_000_000
 total_runs = 3
 
 gamma = 0.99
@@ -50,7 +51,9 @@ entropy_eps = 1e-4
 #envs = ['HumanoidStandup-v4', 'Hopper-v4', 'HalfCheetah-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
 #        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
 
-envs = ['HumanoidStandup-v4']
+envs = ['Swimmer-v4']
+
+#envs = ['HumanoidStandup-v4']
 
 for env_name in envs:
     for run_id in range(1, total_runs+1):
