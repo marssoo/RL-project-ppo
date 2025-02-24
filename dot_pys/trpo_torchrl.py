@@ -45,7 +45,7 @@ line_search_backtracks = 10  # number of backtracking steps in line search
 line_search_accept_ratio = 0.1
 
 # List of environments
-envs = ['Hopper-v4', 'HalfCheetah-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
+envs = ['HumanoidStandup-v4', 'Hopper-v4', 'HalfCheetah-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
         'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
 
 # ---- Helper Functions ----
