@@ -30,8 +30,8 @@ num_cells = 256
 value_lr = 3e-4        # learning rate for value function updates
 frames_per_batch = 1000
 
-#total_frames = 1_000_000
-total_frames = 80_000
+total_frames = 1_000_000
+#total_frames = 80_000
 total_runs = 3
 
 gamma = 0.99
@@ -48,7 +48,8 @@ line_search_accept_ratio = 0.1
 #envs = ['HumanoidStandup-v4', 'Hopper-v4', 'HalfCheetah-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
 #        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
 
-envs = ['Swimmer-v4']
+#envs = ['Swimmer-v4']
+envs = ['HumanoidStandup-v4']
 
 # ---- Helper Functions ----
 def flat_params(model):
