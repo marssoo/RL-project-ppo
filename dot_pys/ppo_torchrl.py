@@ -58,12 +58,12 @@ entropy_eps = 1e-4
 # env
 #env_name = "Hopper-v4"
 
-envs = ['HumanoidStandup-v4', 'HalfCheetah-v4', 'Hopper-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
-        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
+#envs = ['HumanoidStandup-v4', 'HalfCheetah-v4', 'Hopper-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
+#        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
 
 #envs = ['Swimmer-v4']
 
-#envs = ['HumanoidStandup-v4']
+envs = ['HumanoidStandup-v4']
 
 for env_name in envs:
     for run_id in range(1, total_runs+1):
