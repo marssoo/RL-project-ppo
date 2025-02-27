@@ -1,0 +1,8 @@
+# This project requires Python 3.9.
+# Ensure you are using a Python 3.9 environment before installing these packages.
+
+gymnasium[mujoco]
+mujoco==2.3.7
+torchrl
+pandas
+tqdm

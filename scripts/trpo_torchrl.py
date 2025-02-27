@@ -44,14 +44,13 @@ cg_damping = 1e-2            # damping factor for Fisher-vector product
 line_search_backtracks = 10  # number of backtracking steps in line search
 line_search_accept_ratio = 0.1
 
-# List of environments
-#envs = ['HumanoidStandup-v4', 'Hopper-v4', 'HalfCheetah-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
-#        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
+envs = ['HumanoidStandup-v4', 'Hopper-v4', 'HalfCheetah-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
+        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
 
 #envs = ['Swimmer-v4']
-envs = ['HumanoidStandup-v4']
+#envs = ['HumanoidStandup-v4']
 
-# ---- Helper Functions ----
+#  Helper Functions
 def flat_params(model):
     return torch.cat([p.view(-1) for p in model.parameters()])
 
@@ -93,7 +92,7 @@ def conjugate_gradient(f_Ax, b, nsteps, residual_tol=1e-10):
         r_dot_r = new_r_dot_r
     return x
 
-# ---- Main TRPO Loop ----
+# Main TRPO Loop
 for env_name in envs:
     for run_id in range(1, total_runs+1):
         print(f'########## Starting run {run_id} for {env_name} ##########\n')
@@ -266,9 +265,9 @@ for env_name in envs:
                     break
             if not success:
                 set_flat_params(policy_module, old_params)
-            # --------- End TRPO Policy Update ----------
+            # End TRPO Policy Update
 
-            # --------- Value Function Update ----------
+            # Value Function Update
             # Perform several gradient descent steps to update the value network
             # (Here we use 80 iterations per batch; adjust as needed.)
             for _ in range(80):
@@ -277,7 +276,7 @@ for env_name in envs:
                 loss_value = ((v_pred - returns)**2).mean()
                 loss_value.backward()
                 optim_value.step()
-            # --------- End Value Function Update ----------
+            #End Value Function Update
             
             # Step the scheduler (adjusts learning rate of the value network optimizer)
             scheduler.step()
@@ -307,7 +306,7 @@ for env_name in envs:
             pbar.update(frames_per_batch)
         pbar.close()
 
-        # ---- Plotting Results ----
+        # Plotting Results
         plt.figure(figsize=(10, 10))
         plt.subplot(2, 2, 1)
         plt.plot(logs["reward"])
@@ -327,7 +326,7 @@ for env_name in envs:
         plt.savefig(f'../runs/TRPO/plots_{run_name}.jpg', dpi=150)
         # plt.show()
 
-        # ---- Saving Checkpoints and Logs ----
+        #  Saving Checkpoints and Logs 
         save_path = f"../runs/TRPO/{run_name}.pth"
         checkpoint = {
             "policy_state_dict": policy_module.state_dict(),

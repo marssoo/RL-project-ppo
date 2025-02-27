@@ -84,9 +84,9 @@ for env_name in envs:
         env.transform[0].init_stats(num_iter=1000, reduce_dim=0, cat_dim=0)
         check_env_specs(env)
 
-        # -------------------------------
+        
         # Build the policy network (actor)
-        # -------------------------------
+        
         actor_net = nn.Sequential(
             nn.LazyLinear(num_cells, device=device),
             nn.Tanh(),
@@ -121,9 +121,9 @@ for env_name in envs:
 
         print("Actor network initialized.")
 
-        # -------------------------------
+        
         # Data Collector
-        # -------------------------------
+        
         collector = SyncDataCollector(
             env,
             policy_module,
@@ -133,9 +133,9 @@ for env_name in envs:
             device=device,
         )
 
-        # -------------------------------
+        
         # Training Setup
-        # -------------------------------
+        
         optim = torch.optim.Adam(policy_module.parameters(), lr)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optim, total_frames // frames_per_batch, 0.0
@@ -151,9 +151,9 @@ for env_name in envs:
         logs["reward"] = []
         logs["Return (Test)"] = []
 
-        # -------------------------------
+        
         # Training Loop
-        # -------------------------------
+        
         for i, tensordict_data in enumerate(collector):
             tensordict_data = tensordict_data.to(device)
 
@@ -230,9 +230,9 @@ for env_name in envs:
             scheduler.step()
         pbar.close()
 
-        # -------------------------------
+        
         # Plotting
-        # -------------------------------
+        
         plt.figure(figsize=(10, 10))
         plt.subplot(2, 2, 1)
         plt.plot(logs["reward"])
@@ -253,9 +253,9 @@ for env_name in envs:
         plt.savefig(f'../runs/VPG/plots_{run_name}.jpg', dpi=150)
         # plt.show()
 
-        # -------------------------------
+        
         # Saving the Model and Logs
-        # -------------------------------
+        
         save_path = f"../runs/VPG/{run_name}.pth"
         checkpoint = {
             "policy_state_dict": policy_module.state_dict(),

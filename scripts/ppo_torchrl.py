@@ -37,7 +37,6 @@ lr = 3e-4
 max_grad_norm = 1.0
 
 frames_per_batch = 1000
-# For a complete training, bring the number of frames up to 1M
 
 
 #total_frames = 250_000
@@ -48,9 +47,7 @@ total_runs = 3
 # PPO parameters
 sub_batch_size = 64  # cardinality of the sub-samples gathered from the current data in the inner loop
 num_epochs = 10  # optimization steps per batch of data collected
-clip_epsilon = (
-    0.2  # clip value for PPO loss: see the equation in the intro for more context.
-)
+clip_epsilon = 0.2
 gamma = 0.99
 lmbda = 0.95
 entropy_eps = 1e-4
@@ -58,12 +55,12 @@ entropy_eps = 1e-4
 # env
 #env_name = "Hopper-v4"
 
-#envs = ['HumanoidStandup-v4', 'HalfCheetah-v4', 'Hopper-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
-#        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
+envs = ['HumanoidStandup-v4', 'HalfCheetah-v4', 'Hopper-v4', 'InvertedDoublePendulum-v4', 'InvertedPendulum-v4',
+        'Reacher-v4', 'Swimmer-v4', 'Walker2d-v4']
 
 #envs = ['Swimmer-v4']
 
-envs = ['HumanoidStandup-v4']
+#envs = ['HumanoidStandup-v4']
 
 for env_name in envs:
     for run_id in range(1, total_runs+1):
@@ -86,20 +83,7 @@ for env_name in envs:
 
         env.transform[0].init_stats(num_iter=1000, reduce_dim=0, cat_dim=0)
 
-        #print("normalization constant shape:", env.transform[0].loc.shape)
-
-        #print("observation_spec:", env.observation_spec)
-        #print("reward_spec:", env.reward_spec)
-        #print("input_spec:", env.input_spec)
-        #print("action_spec (as defined by input_spec):", env.action_spec)
-        #
         check_env_specs(env)
-        #
-        #rollout = env.rollout(3)
-        #print("rollout of three steps:", rollout)
-        #print("Shape of the rollout TensorDict:", rollout.batch_size)
-
-        # policy
 
         actor_net = nn.Sequential(
             nn.LazyLinear(num_cells, device=device),
@@ -126,7 +110,6 @@ for env_name in envs:
                 "high": env.action_spec.space.high,
             },
             return_log_prob=True,
-            # we'll need the log-prob for the numerator of the importance weights
         )
 
         # value network
@@ -179,7 +162,6 @@ for env_name in envs:
             clip_epsilon=clip_epsilon,
             entropy_bonus=bool(entropy_eps),
             entropy_coef=entropy_eps,
-            # these keys match by default but we set this for completeness
             critic_coef=1.0,
             loss_critic_type="smooth_l1",
         )
@@ -195,14 +177,9 @@ for env_name in envs:
         pbar = tqdm(total=total_frames)
         eval_str = ""
 
-        # We iterate over the collector until it reaches the total number of frames it was
-        # designed to collect:
+
         for i, tensordict_data in enumerate(collector):
-            # we now have a batch of data to work with. Let's learn something from it.
             for _ in range(num_epochs):
-                # We'll need an "advantage" signal to make PPO work.
-                # We re-compute it at each epoch as its value depends on the value
-                # network which is updated in the inner loop.
                 advantage_module(tensordict_data)
                 data_view = tensordict_data.reshape(-1)
                 replay_buffer.extend(data_view.cpu())
@@ -215,7 +192,6 @@ for env_name in envs:
                         + loss_vals["loss_entropy"]
                     )
 
-                    # Optimization: backward, grad clipping and optimization step
                     loss_value.backward()
                     torch.nn.utils.clip_grad_norm_(loss_module.parameters(), max_grad_norm)
                     optim.step()
@@ -233,7 +209,6 @@ for env_name in envs:
             if i % 10 == 0:
                 # We evaluate the policy once every 10 batches of data.
                 with set_exploration_type(ExplorationType.DETERMINISTIC), torch.no_grad():
-                    # execute a rollout with the trained policy
                     eval_rollout = env.rollout(1000, policy_module)
                     logs["eval reward"].append(eval_rollout["next", "reward"].mean().item())
                     logs["Return (test)"].append(
